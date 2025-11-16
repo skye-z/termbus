@@ -67,9 +67,15 @@ func (l *PluginLoader) Validate(path string) (*PluginManifest, error) {
 
 // LoadPlugin loads a plugin into runtime.
 func (l *PluginLoader) LoadPlugin(path string) (*Plugin, error) {
+	manifest, _ := l.Validate(path)
 	plugin, err := l.runtime.Load(path)
 	if err != nil {
 		return nil, err
+	}
+	if manifest != nil {
+		plugin.ID = manifest.Name
+		plugin.Name = manifest.Name
+		plugin.Version = manifest.Version
 	}
 	if l.eventBus != nil {
 		l.eventBus.Publish("plugin.installed", plugin.ID)
