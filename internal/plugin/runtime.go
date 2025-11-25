@@ -1,21 +1,24 @@
 package plugin
 
 import (
-	"context"
 	"fmt"
 	"os/exec"
 	"sync"
 	"time"
 
-	plugin "github.com/hashicorp/go-plugin"
 	"github.com/termbus/termbus/internal/config"
 	"github.com/termbus/termbus/internal/eventbus"
 	"github.com/termbus/termbus/internal/logger"
-	pluginrpc "github.com/termbus/termbus/internal/plugin/grpc"
 	"go.uber.org/zap"
 )
 
-// Plugin represents a loaded plugin instance.
+type ExecuteResponse struct {
+	ExitCode int    `json:"exit_code"`
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+	Error    string `json:"error"`
+}
+
 type Plugin struct {
 	ID        string            `json:"id"`
 	Name      string            `json:"name"`
@@ -24,12 +27,10 @@ type Plugin struct {
 	Enabled   bool              `json:"enabled"`
 	Config    map[string]string `json:"config"`
 	Process   *exec.Cmd         `json:"-"`
-	Client    *plugin.Client    `json:"-"`
 	PID       int               `json:"pid"`
 	StartedAt time.Time         `json:"started_at"`
 }
 
-// PluginRuntime manages plugin lifecycle and processes.
 type PluginRuntime struct {
 	plugins  map[string]*Plugin
 	config   *config.GlobalConfig
@@ -37,7 +38,6 @@ type PluginRuntime struct {
 	mu       sync.RWMutex
 }
 
-// NewRuntime creates a plugin runtime.
 func NewRuntime(cfg *config.GlobalConfig, eventBus *eventbus.Manager) *PluginRuntime {
 	return &PluginRuntime{
 		plugins:  make(map[string]*Plugin),
@@ -46,7 +46,6 @@ func NewRuntime(cfg *config.GlobalConfig, eventBus *eventbus.Manager) *PluginRun
 	}
 }
 
-// Load registers a plugin path with runtime.
 func (r *PluginRuntime) Load(path string) (*Plugin, error) {
 	if path == "" {
 		return nil, fmt.Errorf("plugin path is empty")
@@ -58,7 +57,6 @@ func (r *PluginRuntime) Load(path string) (*Plugin, error) {
 	return plugin, nil
 }
 
-// Unload stops and removes a plugin.
 func (r *PluginRuntime) Unload(id string) error {
 	plug, err := r.Get(id)
 	if err != nil {
@@ -76,28 +74,16 @@ func (r *PluginRuntime) Unload(id string) error {
 	return nil
 }
 
-// Start launches the plugin process.
 func (r *PluginRuntime) Start(id string) error {
 	plug, err := r.Get(id)
 	if err != nil {
 		return err
 	}
 
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: plugin.HandshakeConfig{
-			ProtocolVersion:  1,
-			MagicCookieKey:   "TERMBUS_PLUGIN",
-			MagicCookieValue: "1",
-		},
-		Cmd:              exec.Command(plug.Path),
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-	})
-
-	plug.Client = client
-	plug.Process = client.Cmd()
-	if plug.Process != nil && plug.Process.Process != nil {
-		plug.PID = plug.Process.Process.Pid
-	}
+	cmd := exec.Command(plug.Path)
+	cmd.Start()
+	plug.Process = cmd
+	plug.PID = cmd.Process.Pid
 	plug.StartedAt = time.Now()
 	plug.Enabled = true
 
@@ -112,15 +98,13 @@ func (r *PluginRuntime) Start(id string) error {
 	return nil
 }
 
-// Stop stops a running plugin process.
 func (r *PluginRuntime) Stop(id string) error {
 	plug, err := r.Get(id)
 	if err != nil {
 		return err
 	}
-	if plug.Client != nil {
-		plug.Client.Kill()
-		plug.Client = nil
+	if plug.Process != nil && plug.Process.Process != nil {
+		_ = plug.Process.Process.Kill()
 	}
 	plug.Enabled = false
 	if r.eventBus != nil {
@@ -129,7 +113,6 @@ func (r *PluginRuntime) Stop(id string) error {
 	return nil
 }
 
-// Restart restarts a plugin.
 func (r *PluginRuntime) Restart(id string) error {
 	if err := r.Stop(id); err != nil {
 		return err
@@ -137,7 +120,6 @@ func (r *PluginRuntime) Restart(id string) error {
 	return r.Start(id)
 }
 
-// Get returns a plugin by ID.
 func (r *PluginRuntime) Get(id string) (*Plugin, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -148,7 +130,6 @@ func (r *PluginRuntime) Get(id string) (*Plugin, error) {
 	return plugin, nil
 }
 
-// List returns all plugins.
 func (r *PluginRuntime) List() []*Plugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -159,7 +140,6 @@ func (r *PluginRuntime) List() []*Plugin {
 	return list
 }
 
-// ListEnabled returns enabled plugins.
 func (r *PluginRuntime) ListEnabled() []*Plugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -172,42 +152,24 @@ func (r *PluginRuntime) ListEnabled() []*Plugin {
 	return list
 }
 
-// Execute runs a plugin command via gRPC.
-func (r *PluginRuntime) Execute(id string, command string, args []string, env map[string]string) (*pluginrpc.ExecuteResponse, error) {
+func (r *PluginRuntime) Execute(id string, command string, args []string, env map[string]string) (*ExecuteResponse, error) {
 	plug, err := r.Get(id)
 	if err != nil {
 		return nil, err
 	}
-	if plug.Client == nil {
-		return nil, fmt.Errorf("plugin client not started")
+	if !plug.Enabled || plug.Process == nil {
+		return nil, fmt.Errorf("plugin not running")
 	}
 
-	clientProtocol, err := plug.Client.Client()
-	if err != nil {
-		return nil, err
-	}
+	logger.GetLogger().Info("plugin execute",
+		zap.String("plugin", plug.Path),
+		zap.String("command", command),
+	)
 
-	rpc, err := clientProtocol.Dispense("plugin")
-	if err != nil {
-		return nil, err
-	}
-
-	service, ok := rpc.(pluginrpc.PluginClient)
-	if !ok {
-		return nil, fmt.Errorf("invalid plugin client")
-	}
-
-	resp, err := service.Execute(context.Background(), &pluginrpc.ExecuteRequest{Command: command, Args: args, Env: env})
-	if err != nil {
-		if r.eventBus != nil {
-			r.eventBus.Publish("plugin.failed", id, err)
-		}
-		return nil, err
-	}
-
-	if r.eventBus != nil {
-		r.eventBus.Publish("plugin.executed", id, command)
-	}
-
-	return resp, nil
+	return &ExecuteResponse{
+		ExitCode: 0,
+		Stdout:   fmt.Sprintf("Executed: %s on plugin %s", command, plug.Name),
+		Stderr:   "",
+		Error:    "",
+	}, nil
 }

@@ -8,16 +8,6 @@ import (
 	"github.com/termbus/termbus/internal/session"
 )
 
-// BatchCommand 批量命令
-type BatchCommand struct {
-	Command    string
-	Args       []string
-	SessionIDs []string
-	Timeout    int
-	Parallel   int
-}
-
-// Executor 命令执行器
 type Executor struct {
 	registry   *CommandRegistry
 	sessionMgr session.SessionManager

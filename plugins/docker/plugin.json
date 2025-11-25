@@ -1,0 +1,9 @@
+{
+  "name": "docker",
+  "version": "1.0.0",
+  "description": "Docker container management",
+  "author": "termbus",
+  "permissions": ["ssh.execute", "system.exec"],
+  "commands": ["docker.ps", "docker.logs", "docker.exec", "docker.images"],
+  "config_schema": {}
+}

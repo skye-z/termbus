@@ -5,14 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/termbus/termbus/pkg/interfaces"
 	"github.com/termbus/termbus/pkg/types"
 )
 
 type SSHTool struct {
-	sessionMgr types.SessionManager
+	sessionMgr interfaces.SessionManager
 }
 
-func NewSSHTool(sessionMgr types.SessionManager) *SSHTool {
+func NewSSHTool(sessionMgr interfaces.SessionManager) *SSHTool {
 	return &SSHTool{sessionMgr: sessionMgr}
 }
 
@@ -79,14 +80,10 @@ func (t *SSHTool) Execute(agent *Agent, params map[string]interface{}) (*ToolRes
 }
 
 type SFTPReadTool struct {
-	sftpMgr interface {
-		ReadFile(sessionID, path string) (string, error)
-	}
+	sftpMgr SFTPTool
 }
 
-func NewSFTPReadTool(sftpMgr interface {
-	ReadFile(sessionID, path string) (string, error)
-}) *SFTPReadTool {
+func NewSFTPReadTool(sftpMgr SFTPTool) *SFTPReadTool {
 	return &SFTPReadTool{sftpMgr: sftpMgr}
 }
 
@@ -118,14 +115,10 @@ func (t *SFTPReadTool) Execute(agent *Agent, params map[string]interface{}) (*To
 }
 
 type SFTPWriteTool struct {
-	sftpMgr interface {
-		WriteFile(sessionID, path, content string) error
-	}
+	sftpMgr SFTPTool
 }
 
-func NewSFTPWriteTool(sftpMgr interface {
-	WriteFile(sessionID, path, content string) error
-}) *SFTPWriteTool {
+func NewSFTPWriteTool(sftpMgr SFTPTool) *SFTPWriteTool {
 	return &SFTPWriteTool{sftpMgr: sftpMgr}
 }
 
@@ -159,14 +152,10 @@ func (t *SFTPWriteTool) Execute(agent *Agent, params map[string]interface{}) (*T
 }
 
 type FileListTool struct {
-	sftpMgr interface {
-		List(sessionID, path string) ([]types.FileInfo, error)
-	}
+	sftpMgr SFTPTool
 }
 
-func NewFileListTool(sftpMgr interface {
-	List(sessionID, path string) ([]types.FileInfo, error)
-}) *FileListTool {
+func NewFileListTool(sftpMgr SFTPTool) *FileListTool {
 	return &FileListTool{sftpMgr: sftpMgr}
 }
 
@@ -205,7 +194,13 @@ func (t *FileListTool) Execute(agent *Agent, params map[string]interface{}) (*To
 	return &ToolResult{Success: true, Output: strings.Join(fileList, "\n")}, nil
 }
 
-func GetTools(llmClient LLMClient, sessionMgr types.SessionManager, sftpMgr interface{}) []Tool {
+type SFTPTool interface {
+	ReadFile(sessionID string, path string) (string, error)
+	WriteFile(sessionID string, path string, content string) error
+	List(sessionID string, path string) ([]types.FileInfo, error)
+}
+
+func GetTools(llmClient LLMClient, sessionMgr interfaces.SessionManager, sftpMgr SFTPTool) []Tool {
 	return []Tool{
 		NewSSHTool(sessionMgr),
 		NewSFTPReadTool(sftpMgr),

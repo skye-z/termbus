@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/termbus/termbus/pkg/types"
 )
@@ -83,19 +84,8 @@ func (v *Verifier) GenerateFeedback(ctx *AgentContext, result *VerificationResul
 	}
 
 	if result.RetryNeeded {
-		return fmt.Sprintf("Task completed with issues: %s. Please review and retry.", join(result.Issues, "; "))
+		return fmt.Sprintf("Task completed with issues: %s. Please review and retry.", strings.Join(result.Issues, "; "))
 	}
 
-	return fmt.Sprintf("Task completed. Issues found: %s", join(result.Issues, "; "))
-}
-
-func join(ss []string, sep string) string {
-	result := ""
-	for i, s := range ss {
-		if i > 0 {
-			result += sep
-		}
-		result += s
-	}
-	return result
+	return fmt.Sprintf("Task completed. Issues found: %s", strings.Join(result.Issues, "; "))
 }

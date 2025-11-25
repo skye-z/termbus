@@ -219,15 +219,11 @@ func (s *TaskScheduler) calculateNextRun(schedule string) time.Time {
 	}
 
 	next := now
-	weekday := now.Weekday()
 
 	parts := strings.Split(schedule, " ")
 	if len(parts) >= 5 {
 		minStr := parts[0]
 		hourStr := parts[1]
-		dayStr := parts[2]
-		monthStr := parts[3]
-		weekdayStr := parts[4]
 
 		var min, hour int
 		fmt.Sscanf(minStr, "%d", &min)

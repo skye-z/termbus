@@ -24,6 +24,6 @@ func (p *DockerPlugin) Commands() []string {
 }
 
 func main() {
-	plugin := &DockerPlugin{BasePlugin: api.BasePlugin{Name: "docker", Version: "1.0.0", Description: "Docker container management", Author: "termbus"}}
-	_ = plugin
+	plugin := &DockerPlugin{BasePlugin: api.BasePlugin{NameValue: "docker", VersionValue: "1.0.0", DescriptionValue: "Docker container management", AuthorValue: "termbus"}}
+	api.Serve(plugin)
 }

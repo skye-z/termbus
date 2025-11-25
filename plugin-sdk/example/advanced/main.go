@@ -26,12 +26,12 @@ func (p *AdvancedPlugin) Commands() []string {
 func main() {
 	plugin := &AdvancedPlugin{
 		BasePlugin: api.BasePlugin{
-			Name:        "advanced",
-			Version:     "0.1.0",
-			Description: "Advanced plugin example",
-			Author:      "termbus",
+			NameValue:        "advanced",
+			VersionValue:     "0.1.0",
+			DescriptionValue: "Advanced plugin example",
+			AuthorValue:      "termbus",
 		},
 	}
 
-	_ = plugin
+	api.Serve(plugin)
 }

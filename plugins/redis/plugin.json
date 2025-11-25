@@ -1,0 +1,9 @@
+{
+  "name": "redis",
+  "version": "1.0.0",
+  "description": "Redis database management",
+  "author": "termbus",
+  "permissions": ["system.network"],
+  "commands": ["redis.get", "redis.set", "redis.del", "redis.keys", "redis.info"],
+  "config_schema": {}
+}

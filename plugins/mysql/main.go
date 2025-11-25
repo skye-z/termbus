@@ -24,6 +24,6 @@ func (p *MySQLPlugin) Commands() []string {
 }
 
 func main() {
-	plugin := &MySQLPlugin{BasePlugin: api.BasePlugin{Name: "mysql", Version: "1.0.0", Description: "MySQL database management", Author: "termbus"}}
-	_ = plugin
+	plugin := &MySQLPlugin{BasePlugin: api.BasePlugin{NameValue: "mysql", VersionValue: "1.0.0", DescriptionValue: "MySQL database management", AuthorValue: "termbus"}}
+	api.Serve(plugin)
 }

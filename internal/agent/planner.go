@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/termbus/termbus/internal/eventbus"
 )
 
 type Planner struct {

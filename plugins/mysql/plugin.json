@@ -1,0 +1,9 @@
+{
+  "name": "mysql",
+  "version": "1.0.0",
+  "description": "MySQL database management",
+  "author": "termbus",
+  "permissions": ["system.network"],
+  "commands": ["mysql.query", "mysql.schema", "mysql.tables"],
+  "config_schema": {}
+}

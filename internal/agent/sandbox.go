@@ -3,10 +3,7 @@ package agent
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"sync"
-
-	"github.com/termbus/termbus/pkg/types"
 )
 
 type Sandbox struct {

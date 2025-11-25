@@ -24,6 +24,6 @@ func (p *KubernetesPlugin) Commands() []string {
 }
 
 func main() {
-	plugin := &KubernetesPlugin{BasePlugin: api.BasePlugin{Name: "kubernetes", Version: "1.0.0", Description: "Kubernetes cluster management", Author: "termbus"}}
-	_ = plugin
+	plugin := &KubernetesPlugin{BasePlugin: api.BasePlugin{NameValue: "kubernetes", VersionValue: "1.0.0", DescriptionValue: "Kubernetes cluster management", AuthorValue: "termbus"}}
+	api.Serve(plugin)
 }

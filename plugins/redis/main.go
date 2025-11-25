@@ -24,6 +24,6 @@ func (p *RedisPlugin) Commands() []string {
 }
 
 func main() {
-	plugin := &RedisPlugin{BasePlugin: api.BasePlugin{Name: "redis", Version: "1.0.0", Description: "Redis database management", Author: "termbus"}}
-	_ = plugin
+	plugin := &RedisPlugin{BasePlugin: api.BasePlugin{NameValue: "redis", VersionValue: "1.0.0", DescriptionValue: "Redis database management", AuthorValue: "termbus"}}
+	api.Serve(plugin)
 }

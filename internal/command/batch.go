@@ -8,6 +8,7 @@ import (
 	"github.com/termbus/termbus/internal/eventbus"
 	"github.com/termbus/termbus/internal/logger"
 	"github.com/termbus/termbus/internal/session"
+	"github.com/termbus/termbus/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -168,6 +169,7 @@ type BatchCommand struct {
 	SessionIDs []string
 	Timeout    int
 	Parallel   int
+	Flags      map[string]string
 }
 
 // BatchResult 批量结果

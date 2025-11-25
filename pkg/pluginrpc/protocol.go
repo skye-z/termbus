@@ -1,12 +1,8 @@
-package grpc
-
-import (
-	context "context"
-)
+package pluginrpc
 
 // InitRequest represents plugin initialization request.
 type InitRequest struct {
-	SessionId string
+	SessionID string
 	Config    map[string]string
 }
 
@@ -25,7 +21,7 @@ type ExecuteRequest struct {
 
 // ExecuteResponse represents plugin execution response.
 type ExecuteResponse struct {
-	ExitCode int32
+	ExitCode int
 	Stdout   string
 	Stderr   string
 	Error    string
@@ -42,9 +38,6 @@ type StopResponse struct {
 	Error   string
 }
 
-// InfoRequest represents plugin info request.
-type InfoRequest struct{}
-
 // InfoResponse represents plugin info response.
 type InfoResponse struct {
 	Name        string
@@ -52,9 +45,6 @@ type InfoResponse struct {
 	Description string
 	Author      string
 }
-
-// ManifestRequest represents plugin manifest request.
-type ManifestRequest struct{}
 
 // ManifestResponse represents plugin manifest response.
 type ManifestResponse struct {
@@ -65,13 +55,4 @@ type ManifestResponse struct {
 	Permissions  []string
 	Commands     []string
 	ConfigSchema map[string]string
-}
-
-// PluginClient defines the plugin gRPC client interface.
-type PluginClient interface {
-	Init(ctx context.Context, in *InitRequest) (*InitResponse, error)
-	Execute(ctx context.Context, in *ExecuteRequest) (*ExecuteResponse, error)
-	Stop(ctx context.Context, in *StopRequest) (*StopResponse, error)
-	Info(ctx context.Context, in *InfoRequest) (*InfoResponse, error)
-	Manifest(ctx context.Context, in *ManifestRequest) (*ManifestResponse, error)
 }

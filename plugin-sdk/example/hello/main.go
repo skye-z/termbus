@@ -29,12 +29,12 @@ func (p *HelloPlugin) Commands() []string {
 func main() {
 	plugin := &HelloPlugin{
 		BasePlugin: api.BasePlugin{
-			Name:        "hello",
-			Version:     "1.0.0",
-			Description: "A simple hello world plugin",
-			Author:      "termbus",
+			NameValue:        "hello",
+			VersionValue:     "1.0.0",
+			DescriptionValue: "A simple hello world plugin",
+			AuthorValue:      "termbus",
 		},
 	}
 
-	_ = plugin
+	api.Serve(plugin)
 }

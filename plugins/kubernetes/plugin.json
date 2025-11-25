@@ -1,0 +1,9 @@
+{
+  "name": "kubernetes",
+  "version": "1.0.0",
+  "description": "Kubernetes cluster management",
+  "author": "termbus",
+  "permissions": ["ssh.execute", "system.network"],
+  "commands": ["k8s.pods", "k8s.deploy", "k8s.logs", "k8s.exec"],
+  "config_schema": {}
+}

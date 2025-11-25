@@ -20,11 +20,11 @@ type Plugin interface {
 
 // BasePlugin provides default plugin fields.
 type BasePlugin struct {
-	Name        string
-	Version     string
-	Description string
-	Author      string
-	Config      map[string]string
+	NameValue        string
+	VersionValue     string
+	DescriptionValue string
+	AuthorValue      string
+	Config           map[string]string
 }
 
 // Init stores configuration.
@@ -37,3 +37,15 @@ func (p *BasePlugin) Init(ctx context.Context, config map[string]string) error {
 func (p *BasePlugin) Stop(ctx context.Context) error {
 	return nil
 }
+
+// Name returns plugin name.
+func (p *BasePlugin) Name() string { return p.NameValue }
+
+// Version returns plugin version.
+func (p *BasePlugin) Version() string { return p.VersionValue }
+
+// Description returns plugin description.
+func (p *BasePlugin) Description() string { return p.DescriptionValue }
+
+// Author returns plugin author.
+func (p *BasePlugin) Author() string { return p.AuthorValue }

@@ -1,4 +1,4 @@
-package command
+package integration
 
 import (
 	"testing"
@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/termbus/termbus/internal/command"
+	"github.com/termbus/termbus/internal/eventbus"
+	"github.com/termbus/termbus/internal/session"
 )
 
 func TestBatchExecutor(t *testing.T) {
@@ -13,13 +16,13 @@ func TestBatchExecutor(t *testing.T) {
 		t.Skip("Skipping integration test")
 	}
 
-	registry := NewCommandRegistry()
+	registry := command.NewCommandRegistry()
 	sessMgr := session.NewSessionManager(nil, nil, nil)
 	eventBus := eventbus.NewManager()
 
-	executor := NewBatchExecutor(registry, sessMgr, eventBus, 30)
+	executor := command.NewBatchExecutor(registry, sessMgr, eventBus, 30)
 
-	batch := &BatchCommand{
+	batch := &command.BatchCommand{
 		Command:    "echo",
 		Args:       []string{"test"},
 		SessionIDs: []string{"session1", "session2"},
@@ -37,14 +40,14 @@ func TestTaskScheduler(t *testing.T) {
 		t.Skip("Skipping integration test")
 	}
 
-	registry := NewCommandRegistry()
+	registry := command.NewCommandRegistry()
 	sessMgr := session.NewSessionManager(nil, nil, nil)
 	eventBus := eventbus.NewManager()
 
-	executor := NewBatchExecutor(registry, sessMgr, eventBus, 30)
-	scheduler := NewTaskScheduler(executor, eventBus)
+	executor := command.NewBatchExecutor(registry, sessMgr, eventBus, 30)
+	scheduler := command.NewTaskScheduler(executor, eventBus)
 
-	task := &ScheduledTask{
+	task := &command.ScheduledTask{
 		ID:         "test-task",
 		Name:       "Test Task",
 		Command:    "echo test",
@@ -72,19 +75,19 @@ func TestCommandExecutionFlow(t *testing.T) {
 		t.Skip("Skipping integration test")
 	}
 
-	registry := NewCommandRegistry()
+	registry := command.NewCommandRegistry()
 	sessMgr := session.NewSessionManager(nil, nil, nil)
 	eventBus := eventbus.NewManager()
 
-	executor := NewExecutor(registry, sessMgr, eventBus)
+	executor := command.NewExecutor(registry, sessMgr, eventBus)
 
-	cmd := &Command{
+	cmd := &command.Command{
 		Name:        "test",
 		Description: "Test command",
 		Category:    "test",
-		Handler:     func(ctx *ExecutionContext) error { return nil },
-		Args:        []ArgDefinition{},
-		Flags:       []FlagDefinition{},
+		Handler:     func(ctx *command.ExecutionContext) error { return nil },
+		Args:        []command.ArgDefinition{},
+		Flags:       []command.FlagDefinition{},
 	}
 
 	err := executor.RegisterCommand(cmd)

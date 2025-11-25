@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/termbus/termbus/internal/eventbus"
 	"github.com/termbus/termbus/pkg/types"
 )
 
@@ -119,8 +118,8 @@ func (r *AgentRuntime) Create(sessionID string, model string, llmClient LLMClien
 	}
 
 	agent.Planner = NewPlanner(llmClient)
-	agent.Executor = NewExecutor(tools, eventBus)
-	agent.Verifier = NewVerifier(llmClient, eventBus)
+	agent.Executor = NewExecutor(tools, r.eventBus)
+	agent.Verifier = NewVerifier(llmClient, r.eventBus)
 	agent.Tools = tools
 
 	r.mu.Lock()
