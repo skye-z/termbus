@@ -35,6 +35,11 @@ func (e *Executor) Execute(cmdName string, args []string, flags map[string]strin
 		SessionID: flags["session"],
 		Args:      args,
 		Flags:     flags,
+		Output: func(message string) {
+			if e.eventBus != nil {
+				e.eventBus.Publish("command.output", cmdName, message)
+			}
+		},
 	}
 
 	err = cmd.Handler(ctx)

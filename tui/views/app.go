@@ -2,14 +2,17 @@ package views
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	plugin "github.com/termbus/termbus/internal/plugin"
 	"github.com/termbus/termbus/internal/ssh"
 	"github.com/termbus/termbus/pkg/interfaces"
 	"github.com/termbus/termbus/pkg/types"
 	"github.com/termbus/termbus/tui/components/commandbar"
 	"github.com/termbus/termbus/tui/components/hostlist"
+	"github.com/termbus/termbus/tui/components/modal"
 	"github.com/termbus/termbus/tui/components/shell"
 	"github.com/termbus/termbus/tui/components/statusbar"
 	"github.com/termbus/termbus/tui/components/tabs"
@@ -28,6 +31,7 @@ type AppModel struct {
 	shellView  shell.Model
 	commandBar commandbar.Model
 	statusBar  statusbar.Model
+	modalState modalState
 
 	activeSessionID string
 	activeHostAlias string
@@ -55,6 +59,7 @@ func NewApp(eventBus interfaces.EventBus, sessions interfaces.SessionManager, ss
 		commandBar: commandBar,
 		statusBar:  statusBar,
 		sessionTab: tabs.New(nil),
+		modalState: modalState{active: false},
 	}
 
 	model.subscribeEvents()
@@ -64,16 +69,97 @@ func NewApp(eventBus interfaces.EventBus, sessions interfaces.SessionManager, ss
 }
 
 func (m AppModel) Init() tea.Cmd {
+	if m.eventBus != nil {
+		m.eventBus.Subscribe("command.output", func(args ...interface{}) {
+			if len(args) > 1 {
+				if text, ok := args[1].(string); ok {
+					m.shellView.AppendOutput(text + "\n")
+				}
+			}
+		})
+		m.eventBus.Subscribe("plugin.permission.requested", func(args ...interface{}) {
+			pluginID := ""
+			perm := ""
+			permList := make([]string, 0)
+			if len(args) > 0 {
+				if v, ok := args[0].(string); ok {
+					pluginID = v
+				}
+			}
+			if len(args) > 1 {
+				if perms, ok := args[1].([]plugin.Permission); ok && len(perms) > 0 {
+					perm = string(perms[0])
+					for _, p := range perms {
+						permList = append(permList, "- "+string(p))
+					}
+				}
+			}
+			m.modalState.active = true
+			message := "Allow plugin " + pluginID + " to request:\n"
+			if len(permList) > 0 {
+				message += strings.Join(permList, "\n")
+			} else {
+				message += "- " + perm
+			}
+			m.modalState.confirm = modal.ConfirmModal{
+				Title:   "Permission Request",
+				Message: message,
+				Active:  true,
+				OnYes: func() {
+					m.modalState.active = false
+					if m.eventBus != nil {
+						m.eventBus.Publish("plugin.permission.granted", pluginID)
+					}
+				},
+				OnNo: func() {
+					m.modalState.active = false
+					if m.eventBus != nil {
+						m.eventBus.Publish("plugin.permission.revoked", pluginID)
+					}
+				},
+			}
+		})
+		m.eventBus.Subscribe("plugin.permission.granted", func(args ...interface{}) {
+			if len(args) == 0 {
+				return
+			}
+			if id, ok := args[0].(string); ok {
+				m.statusBar.Left = "Permission granted: " + id
+			}
+		})
+		m.eventBus.Subscribe("plugin.permission.revoked", func(args ...interface{}) {
+			if len(args) == 0 {
+				return
+			}
+			if id, ok := args[0].(string); ok {
+				m.statusBar.Left = "Permission denied: " + id
+			}
+		})
+	}
 	return nil
 }
 
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case string:
+		// command output messages rendered in shell view for now
+		m.shellView.AppendOutput(msg + "\n")
+	case []interface{}:
+		if len(msg) > 1 {
+			if text, ok := msg[1].(string); ok {
+				m.shellView.AppendOutput(text + "\n")
+			}
+		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		m.resize()
 	case tea.KeyMsg:
+		if m.modalState.active {
+			var cmd tea.Cmd
+			m.modalState.confirm, cmd = m.modalState.confirm.Update(msg)
+			return m, cmd
+		}
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -123,7 +209,12 @@ func (m AppModel) View() string {
 
 	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
-	return lipgloss.JoinVertical(lipgloss.Left, status, tabsView, body, m.commandBar.View())
+	view := lipgloss.JoinVertical(lipgloss.Left, status, tabsView, body, m.commandBar.View())
+	if m.modalState.active {
+		modalView := m.modalState.confirm.View(m.width / 2)
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modalView)
+	}
+	return view
 }
 
 func (m *AppModel) resize() {

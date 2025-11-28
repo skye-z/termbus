@@ -66,6 +66,11 @@ func (eb *EventBus) Publish(topic string, args ...interface{}) {
 	}
 }
 
+// SubscribeAsync subscribes a handler and always runs async.
+func (eb *EventBus) SubscribeAsync(topic string, handler interface{}) {
+	eb.Subscribe(topic, handler)
+}
+
 // HasCallback checks if a topic has any subscribers
 func (eb *EventBus) HasCallback(topic string) bool {
 	eb.mu.RLock()

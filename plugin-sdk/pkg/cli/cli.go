@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 )
 
 // CLI provides basic plugin tooling.
@@ -28,12 +29,39 @@ func (c *CLI) Parse(args []string) error {
 func (c *CLI) Run() error {
 	switch c.action {
 	case "validate":
-		return nil
+		return c.Validate()
 	case "build":
-		return nil
+		return c.Build()
 	case "sign":
-		return nil
+		return c.Sign()
 	default:
 		return fmt.Errorf("unknown action: %s", c.action)
 	}
+}
+
+// Validate validates plugin manifest.
+func (c *CLI) Validate() error {
+	if c.pluginPath == "" {
+		return fmt.Errorf("plugin path required")
+	}
+	if _, err := os.Stat(c.pluginPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Build is a placeholder build step.
+func (c *CLI) Build() error {
+	if c.pluginPath == "" {
+		return fmt.Errorf("plugin path required")
+	}
+	return nil
+}
+
+// Sign is a placeholder sign step.
+func (c *CLI) Sign() error {
+	if c.pluginPath == "" {
+		return fmt.Errorf("plugin path required")
+	}
+	return nil
 }

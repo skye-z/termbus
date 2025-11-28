@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -67,6 +68,21 @@ func (l *AuditLogger) Export(pluginID string, format string, output string) erro
 		return err
 	}
 	return os.WriteFile(output, data, 0600)
+}
+
+// Search searches audit entries by keyword.
+func (l *AuditLogger) Search(keyword string) []*AuditEntry {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	results := make([]*AuditEntry, 0)
+	for _, entries := range l.entries {
+		for _, entry := range entries {
+			if strings.Contains(entry.Action, keyword) || strings.Contains(entry.Details, keyword) || strings.Contains(entry.Result, keyword) {
+				results = append(results, entry)
+			}
+		}
+	}
+	return results
 }
 
 func (l *AuditLogger) persist(pluginID string) error {

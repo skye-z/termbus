@@ -41,6 +41,7 @@ type ExecutionContext struct {
 	SessionID string
 	Args      []string
 	Flags     map[string]string
+	Output    func(message string)
 }
 
 // CommandRegistry 命令注册表

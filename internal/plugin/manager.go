@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/termbus/termbus/internal/eventbus"
 )
@@ -13,11 +14,12 @@ type PluginManager struct {
 	installer *PluginInstaller
 	store     *PluginStore
 	eventBus  *eventbus.Manager
+	audit     *AuditLogger
 }
 
 // NewManager creates a plugin manager.
-func NewManager(runtime *PluginRuntime, loader *PluginLoader, installer *PluginInstaller, store *PluginStore, eventBus *eventbus.Manager) *PluginManager {
-	return &PluginManager{runtime: runtime, loader: loader, installer: installer, store: store, eventBus: eventBus}
+func NewManager(runtime *PluginRuntime, loader *PluginLoader, installer *PluginInstaller, store *PluginStore, audit *AuditLogger, eventBus *eventbus.Manager) *PluginManager {
+	return &PluginManager{runtime: runtime, loader: loader, installer: installer, store: store, audit: audit, eventBus: eventBus}
 }
 
 // Install installs a plugin from source.
@@ -38,6 +40,9 @@ func (m *PluginManager) Install(source string) (*Plugin, error) {
 	if m.store != nil {
 		_ = m.store.Add(plug)
 	}
+	if m.audit != nil {
+		_ = m.audit.Log(&AuditEntry{PluginID: plug.ID, Action: "install", Result: "success", Timestamp: time.Now()})
+	}
 	if m.eventBus != nil {
 		m.eventBus.Publish("plugin.installed", plug.ID)
 	}
@@ -54,6 +59,9 @@ func (m *PluginManager) Uninstall(id string) error {
 	}
 	if m.store != nil {
 		_ = m.store.Remove(id)
+	}
+	if m.audit != nil {
+		_ = m.audit.Log(&AuditEntry{PluginID: id, Action: "uninstall", Result: "success", Timestamp: time.Now()})
 	}
 	if m.eventBus != nil {
 		m.eventBus.Publish("plugin.uninstalled", id)
@@ -95,6 +103,19 @@ func (m *PluginManager) Update(id string) error {
 		return fmt.Errorf("runtime not configured")
 	}
 	return m.runtime.Restart(id)
+}
+
+// Reload reloads a plugin.
+func (m *PluginManager) Reload(id string) error {
+	if m.runtime == nil {
+		return fmt.Errorf("runtime not configured")
+	}
+	return m.runtime.Restart(id)
+}
+
+// Info returns plugin info.
+func (m *PluginManager) Info(id string) (*Plugin, error) {
+	return m.Get(id)
 }
 
 // List returns all plugins.
