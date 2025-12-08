@@ -101,11 +101,15 @@ func (m *Manager) load() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(m.configPath), 0755); err != nil {
+	configDir := filepath.Dir(m.configPath)
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(configDir, 0755); err != nil {
 			return fmt.Errorf("failed to create config directory: %w", err)
 		}
-		if err := m.v.SafeWriteConfig(); err != nil {
+	}
+
+	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
+		if err := m.v.WriteConfigAs(m.configPath); err != nil {
 			return fmt.Errorf("failed to write default config: %w", err)
 		}
 	}

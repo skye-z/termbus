@@ -1,0 +1,29 @@
+# E2E Test Configuration
+# This file contains test server credentials for E2E testing
+# DO NOT commit this file with real credentials to version control
+
+hosts:
+  # Test SSH server
+  ssh_server:
+    hostname: "10.8.8.10"
+    port: 22
+    username: "skye"
+    password: "skye@DevOps$Main"
+    
+  # Alternative SSH server (backup)
+  # ssh_server_backup:
+  #   hostname: "10.8.8.188"
+  #   port: 22
+  #   username: "root"
+  #   password: "your_password_here"
+
+# Test paths
+test_paths:
+  remote_tmp: "/tmp"
+  remote_home: "/home/skye"
+
+# Test timeouts (seconds)
+timeouts:
+  connect: 30
+  command: 60
+  transfer: 120

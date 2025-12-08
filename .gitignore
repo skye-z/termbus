@@ -54,3 +54,6 @@ known_hosts
 
 # OS specific
 Thumbs.db
+
+test/e2e/report/
+test/e2e/test/

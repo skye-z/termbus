@@ -2,11 +2,9 @@ package views
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	plugin "github.com/termbus/termbus/internal/plugin"
 	"github.com/termbus/termbus/internal/ssh"
 	"github.com/termbus/termbus/pkg/interfaces"
 	"github.com/termbus/termbus/pkg/types"
@@ -69,6 +67,7 @@ func NewApp(eventBus interfaces.EventBus, sessions interfaces.SessionManager, ss
 }
 
 func (m AppModel) Init() tea.Cmd {
+	// Subscribe to event bus events
 	if m.eventBus != nil {
 		m.eventBus.Subscribe("command.output", func(args ...interface{}) {
 			if len(args) > 1 {
@@ -80,31 +79,19 @@ func (m AppModel) Init() tea.Cmd {
 		m.eventBus.Subscribe("plugin.permission.requested", func(args ...interface{}) {
 			pluginID := ""
 			perm := ""
-			permList := make([]string, 0)
 			if len(args) > 0 {
 				if v, ok := args[0].(string); ok {
 					pluginID = v
 				}
 			}
 			if len(args) > 1 {
-				if perms, ok := args[1].([]plugin.Permission); ok && len(perms) > 0 {
-					perm = string(perms[0])
-					for _, p := range perms {
-						permList = append(permList, "- "+string(p))
-					}
+				if v, ok := args[1].(string); ok {
+					perm = v
 				}
-			}
-			m.modalState.active = true
-			message := "Allow plugin " + pluginID + " to request:\n"
-			if len(permList) > 0 {
-				message += strings.Join(permList, "\n")
-			} else {
-				message += "- " + perm
 			}
 			m.modalState.confirm = modal.ConfirmModal{
 				Title:   "Permission Request",
-				Message: message,
-				Active:  true,
+				Message: fmt.Sprintf("Plugin %s is requesting permission: %s", pluginID, perm),
 				OnYes: func() {
 					m.modalState.active = false
 					if m.eventBus != nil {
@@ -117,7 +104,9 @@ func (m AppModel) Init() tea.Cmd {
 						m.eventBus.Publish("plugin.permission.revoked", pluginID)
 					}
 				},
+				Active: true,
 			}
+			m.modalState.active = true
 		})
 		m.eventBus.Subscribe("plugin.permission.granted", func(args ...interface{}) {
 			if len(args) == 0 {
@@ -136,7 +125,7 @@ func (m AppModel) Init() tea.Cmd {
 			}
 		})
 	}
-	return nil
+	return tea.WindowSize()
 }
 
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
